@@ -1,0 +1,37 @@
+{
+  "name": "glowsuite",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare && prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:reset": "prisma migrate reset --force",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@pinia/nuxt": "^0.9.0",
+    "@prisma/client": "^6.9.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.0",
+    "pinia": "^2.3.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@iconify-json/lucide": "^1.2.121",
+    "@nuxt/icon": "^1.12.0",
+    "@nuxtjs/tailwindcss": "^6.13.0",
+    "@types/bcryptjs": "^2.4.0",
+    "@types/jsonwebtoken": "^9.0.0",
+    "nuxt": "^3.16.0",
+    "prisma": "^6.9.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.9"
+  }
+}

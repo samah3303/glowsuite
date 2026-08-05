@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: glowsuite_app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:./prod.db
+      - JWT_SECRET=glowsuite-production-secret-key-change-me
+      - PORT=3000
+      - HOST=0.0.0.0
+    volumes:
+      - glowsuite_data:/app/prisma
+
+volumes:
+  glowsuite_data:

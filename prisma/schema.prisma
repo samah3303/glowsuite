@@ -1,0 +1,241 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Tenant {
+  id           String        @id @default(cuid())
+  name         String
+  slug         String        @unique
+  logoUrl      String?
+  currency     String        @default("USD")
+  timezone     String        @default("UTC")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  status       String        @default("ACTIVE")
+  subscriptions Subscription[]
+  locations    Location[]
+  users        User[]
+  staff        Staff[]
+  categories   Category[]
+  services     Service[]
+  customers    Customer[]
+  appointments Appointment[]
+  payments     Payment[]
+}
+
+model Location {
+  id           String        @id @default(cuid())
+  tenantId     String
+  name         String
+  address      String?
+  city         String?
+  phone        String?
+  email        String?
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staff        Staff[]
+  appointments Appointment[]
+}
+
+model User {
+  id           String        @id @default(cuid())
+  tenantId     String?
+  email        String        @unique
+  passwordHash String
+  role         String        @default("STAFF")
+  firstName    String
+  lastName     String
+  phone        String?
+  avatarUrl    String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  tenant       Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staff        Staff?
+}
+
+model Staff {
+  id           String         @id @default(cuid())
+  tenantId     String
+  locationId   String
+  userId       String?        @unique
+  displayName  String
+  title        String?
+  bio          String?
+  color        String         @default("#8B5CF6")
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  location     Location       @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  user         User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  shifts       StaffShift[]
+  timeOff      StaffTimeOff[]
+  services     StaffService[]
+  appointments Appointment[]
+}
+
+model StaffShift {
+  id        String  @id @default(cuid())
+  staffId   String
+  dayOfWeek Int
+  startTime String
+  endTime   String
+  isWorking Boolean @default(true)
+  staff     Staff   @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, dayOfWeek])
+}
+
+model StaffTimeOff {
+  id        String   @id @default(cuid())
+  staffId   String
+  startDate DateTime
+  endDate   DateTime
+  reason    String?
+  staff     Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  tenantId  String
+  name      String
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  services  Service[]
+}
+
+model Service {
+  id              String         @id @default(cuid())
+  tenantId        String
+  categoryId      String
+  name            String
+  description     String?
+  durationMinutes Int            @default(30)
+  bufferMinutes   Int            @default(0)
+  price           Float
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category        Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  staff           StaffService[]
+  appointmentItem AppointmentItem[]
+}
+
+model StaffService {
+  staffId        String
+  serviceId      String
+  customPrice    Float?
+  customDuration Int?
+  staff          Staff   @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  service        Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([staffId, serviceId])
+}
+
+model Customer {
+  id           String        @id @default(cuid())
+  tenantId     String
+  name         String
+  email        String?
+  phone        String?
+  notes        String?
+  allergyInfo  String?
+  totalSpent   Float         @default(0)
+  noShowCount  Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@index([tenantId, email])
+  @@index([tenantId, phone])
+}
+
+model Appointment {
+  id          String            @id @default(cuid())
+  tenantId    String
+  locationId  String
+  customerId  String
+  staffId     String
+  startTime   DateTime
+  endTime     DateTime
+  status      String            @default("SCHEDULED")
+  totalAmount Float
+  depositPaid Float             @default(0)
+  notes       String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  location    Location          @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  customer    Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  staff       Staff             @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  items       AppointmentItem[]
+  payments    Payment[]
+
+  @@index([staffId, startTime, endTime])
+  @@index([tenantId, locationId, startTime])
+  @@index([customerId])
+}
+
+model AppointmentItem {
+  id            String      @id @default(cuid())
+  appointmentId String
+  serviceId     String
+  serviceName   String
+  price         Float
+  duration      Int
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  service       Service     @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+}
+
+model Payment {
+  id            String      @id @default(cuid())
+  tenantId      String
+  appointmentId String
+  amount        Float
+  method        String      @default("CARD")
+  status        String      @default("PENDING")
+  transactionId String?
+  createdAt     DateTime    @default(now())
+  tenant        Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+}
+
+model Plan {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  displayName   String
+  price         Float    @default(0)
+  interval      String   @default("monthly")
+  maxLocations  Int      @default(1)
+  maxStaff      Int      @default(5)
+  maxServices   Int      @default(20)
+  features      String   @default("[]")
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id          String    @id @default(cuid())
+  tenantId    String
+  planId      String
+  status      String    @default("ACTIVE")
+  startDate   DateTime  @default(now())
+  endDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan        Plan      @relation(fields: [planId], references: [id])
+}

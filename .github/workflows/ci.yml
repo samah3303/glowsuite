@@ -1,0 +1,35 @@
+name: GlowSuite CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  audit-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck Nuxt code
+        run: npx nuxi typecheck
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Build production app
+        run: npm run build
+        env:
+          JWT_SECRET: ci-testing-jwt-secret-key-12345

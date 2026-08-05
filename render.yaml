@@ -1,0 +1,26 @@
+services:
+  # Nuxt 3 Web Service
+  - type: web
+    name: glowsuite-app
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npx prisma db push && npx tsx prisma/seed.ts && node .output/server/index.mjs
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: glowsuite-db
+          property: connectionString
+
+# Render Managed PostgreSQL Database
+databases:
+  - name: glowsuite-db
+    region: oregon
+    plan: free
+    databaseName: glowsuite
+    user: glowsuite_user
