@@ -91,7 +91,7 @@
     </header>
 
     <!-- Main Content -->
-    <main class="pt-16 md:ml-[260px] min-h-screen p-4 md:p-6 transition-all duration-300">
+    <main class="pt-20 md:ml-[260px] min-h-screen p-4 md:p-6 transition-all duration-300">
       <slot />
     </main>
 

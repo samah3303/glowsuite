@@ -1,5 +1,5 @@
 <template>
-  <div class="h-[calc(100vh-6rem)] flex flex-col bg-surface-950 -m-4 md:-m-6 relative">
+  <div class="h-[calc(100vh-7rem)] flex flex-col bg-surface-950 rounded-2xl border border-surface-800 overflow-hidden relative">
     
     <!-- Top Controls Bar -->
     <div class="h-16 flex items-center justify-between px-4 md:px-6 border-b border-surface-800 bg-surface-900/50 backdrop-blur-md z-10 shrink-0">

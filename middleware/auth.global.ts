@@ -3,8 +3,13 @@ import { useAuthStore } from '~/stores/auth'
 export default defineNuxtRouteMiddleware(async (to, from) => {
   const auth = useAuthStore()
   
+  // Attempt to load user from session cookie if not loaded yet
+  if (!auth.isAuthenticated) {
+    await auth.fetchUser()
+  }
+
   if (['/', '/login', '/register'].includes(to.path)) {
-    if (auth.isAuthenticated && (to.path === '/login' || to.path === '/register' || to.path === '/')) {
+    if (auth.isAuthenticated) {
       if (auth.user?.role === 'SUPER_ADMIN') {
         return navigateTo('/admin')
       }
@@ -14,9 +19,6 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   }
 
   if (to.path.startsWith('/app') || to.path.startsWith('/admin')) {
-    if (!auth.isAuthenticated) {
-      await auth.fetchUser()
-    }
     if (!auth.isAuthenticated) {
       return navigateTo('/login')
     }
