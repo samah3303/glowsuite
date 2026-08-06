@@ -7,16 +7,16 @@
         <p class="text-surface-400">Good {{ greeting }}, {{ auth.user?.firstName }}!</p>
       </div>
       <div class="flex flex-col sm:flex-row gap-2">
-        <button class="btn-primary flex items-center justify-center gap-2 min-h-[44px]">
+        <NuxtLink to="/app/calendar" class="btn-primary flex items-center justify-center gap-2 min-h-[44px]">
           <Icon name="lucide:plus" class="w-4 h-4" /> New Appointment
-        </button>
+        </NuxtLink>
         <div class="flex gap-2">
-          <button class="btn-secondary flex-1 flex items-center justify-center gap-2 min-h-[44px]">
+          <NuxtLink to="/app/clients" class="btn-secondary flex-1 flex items-center justify-center gap-2 min-h-[44px]">
             <Icon name="lucide:user-plus" class="w-4 h-4" /> Client
-          </button>
-          <button class="btn-secondary flex-1 flex items-center justify-center gap-2 min-h-[44px]">
+          </NuxtLink>
+          <NuxtLink to="/app/services" class="btn-secondary flex-1 flex items-center justify-center gap-2 min-h-[44px]">
             <Icon name="lucide:scissors" class="w-4 h-4" /> Service
-          </button>
+          </NuxtLink>
         </div>
       </div>
     </div>
@@ -32,7 +32,7 @@
           <p class="text-surface-400 text-sm font-medium">Today's Revenue</p>
           <div class="flex items-baseline gap-2">
             <h3 class="text-2xl font-bold text-surface-50">{{ isLoading ? '...' : `$${overview?.todayRevenue || 0}` }}</h3>
-            <span class="text-xs text-emerald-400 flex items-center"><Icon name="lucide:trending-up" class="w-3 h-3 mr-1"/>+12%</span>
+            <span class="text-xs text-emerald-400 flex items-center"><Icon name="lucide:trending-up" class="w-3 h-3 mr-1"/>Live</span>
           </div>
         </div>
       </div>
@@ -46,7 +46,6 @@
           <p class="text-surface-400 text-sm font-medium">Appointments</p>
           <div class="flex items-baseline gap-2">
             <h3 class="text-2xl font-bold text-surface-50">{{ isLoading ? '...' : overview?.todayAppointments || 0 }}</h3>
-            <span class="text-xs text-emerald-400 flex items-center"><Icon name="lucide:trending-up" class="w-3 h-3 mr-1"/>+2</span>
           </div>
         </div>
       </div>
@@ -59,7 +58,7 @@
         <div>
           <p class="text-surface-400 text-sm font-medium">New Clients</p>
           <div class="flex items-baseline gap-2">
-            <h3 class="text-2xl font-bold text-surface-50">{{ isLoading ? '...' : overview?.newClientsWeek || 0 }}</h3>
+            <h3 class="text-2xl font-bold text-surface-50">{{ isLoading ? '...' : overview?.weekNewClients || 0 }}</h3>
           </div>
         </div>
       </div>
@@ -91,7 +90,7 @@
         <Icon name="lucide:loader-2" class="w-8 h-8 text-brand-500 animate-spin" />
       </div>
       <div v-else-if="!appointments.length" class="p-8 text-center text-surface-400">
-        No upcoming appointments today.
+        No upcoming appointments scheduled.
       </div>
       <div v-else class="divide-y divide-surface-800/50">
         <div v-for="apt in appointments" :key="apt.id" class="p-4 hover:bg-surface-800/30 transition-colors flex flex-col md:flex-row md:items-center gap-4">
@@ -110,12 +109,12 @@
           </div>
 
           <div class="shrink-0 w-28 text-right">
-            <span class="px-2 py-1 rounded-full text-xs font-medium border"
+            <span class="px-2 py-1 rounded-full text-xs font-medium border uppercase tracking-wider"
                   :class="{
-                    'badge-scheduled': apt.status === 'scheduled',
-                    'badge-confirmed': apt.status === 'confirmed',
-                    'badge-in-service': apt.status === 'in-service',
-                    'badge-completed': apt.status === 'completed'
+                    'bg-surface-800 text-surface-200 border-surface-700': apt.status === 'scheduled',
+                    'bg-blue-500/10 text-blue-400 border-blue-500/20': apt.status === 'confirmed',
+                    'bg-amber-500/10 text-amber-400 border-amber-500/20': apt.status === 'in-service',
+                    'bg-emerald-500/10 text-emerald-400 border-emerald-500/20': apt.status === 'completed'
                   }">
               {{ apt.status }}
             </span>
@@ -148,24 +147,29 @@ const greeting = computed(() => {
 })
 
 const formatTime = (isoString: string) => {
+  if (!isoString) return ''
   return new Date(isoString).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 }
 
 const fetchData = async () => {
   isLoading.value = true
   try {
-    // Mock endpoints for now
     const locationId = app.activeLocationId || 'all'
     const [statsRes, aptsRes] = await Promise.all([
-      get(`/api/v1/analytics/overview`, { location: locationId }).catch(() => ({ data: { todayRevenue: 1250, todayAppointments: 18, newClientsWeek: 5, occupancyRate: 75 } })),
-      get(`/api/v1/appointments`, { limit: 5, today: true, location: locationId }).catch(() => ({ data: [
-        { id: '1', startTime: new Date(new Date().setHours(10, 0, 0, 0)).toISOString(), clientName: 'Sarah Jenkins', serviceName: 'Women\'s Haircut & Style', staffName: 'Jessica T.', status: 'confirmed' },
-        { id: '2', startTime: new Date(new Date().setHours(11, 30, 0, 0)).toISOString(), clientName: 'Mike Ross', serviceName: 'Men\'s Fade', staffName: 'David K.', status: 'scheduled' },
-        { id: '3', startTime: new Date(new Date().setHours(13, 0, 0, 0)).toISOString(), clientName: 'Emily Chen', serviceName: 'Balayage & Toner', staffName: 'Jessica T.', status: 'in-service' },
-      ] }))
+      get(`/api/v1/analytics/overview`, { locationId }).catch(() => ({ todayRevenue: 0, todayAppointments: 0, weekNewClients: 0, occupancyRate: 0 })),
+      get(`/api/v1/appointments`, { locationId }).catch(() => ([]))
     ])
-    overview.value = (statsRes as any).data
-    appointments.value = (aptsRes as any).data
+
+    overview.value = statsRes
+    const rawApts = Array.isArray(aptsRes) ? aptsRes : (aptsRes as any)?.data || []
+    appointments.value = rawApts.map((a: any) => ({
+      id: a.id,
+      startTime: a.startTime,
+      clientName: a.customer?.name || a.clientName || 'Guest Client',
+      serviceName: a.items?.[0]?.serviceName || a.serviceName || 'General Service',
+      staffName: a.staff?.displayName || a.staffName || 'Staff Member',
+      status: (a.status || 'SCHEDULED').toLowerCase()
+    }))
   } finally {
     isLoading.value = false
   }
@@ -175,10 +179,3 @@ onMounted(() => {
   fetchData()
 })
 </script>
-
-<style scoped>
-.badge-scheduled { @apply bg-surface-800 text-surface-200 border-surface-700; }
-.badge-confirmed { @apply bg-blue-500/10 text-blue-400 border-blue-500/20; }
-.badge-in-service { @apply bg-amber-500/10 text-amber-400 border-amber-500/20; }
-.badge-completed { @apply bg-emerald-500/10 text-emerald-400 border-emerald-500/20; }
-</style>
